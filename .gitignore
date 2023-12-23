@@ -1,0 +1,40 @@
+.env
+
+# Python-related files and directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+*.egg-info
+*.pyc
+
+# Virtual environments
+venv/
+env/
+*.venv/
+.Python
+
+# Compiled files
+*.pyc
+*.pyo
+
+# Jupyter Notebook specific
+.ipynb_checkpoints/
+
+# IDE-specific files and directories (e.g., for PyCharm, VSCode, etc.)
+.idea/
+.vscode/
+
+# Project-specific settings (uncomment as needed)
+# config.py
+# settings.ini
+
+# Logs
+*.log
+
+# Miscellaneous
+__init__.py

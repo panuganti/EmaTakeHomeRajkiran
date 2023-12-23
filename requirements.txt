@@ -1,0 +1,11 @@
+MergePythonClient
+langchain
+openai
+python-dotenv
+huggingface_hub
+streamlit
+gradio
+evals
+ipykernel
+pyautogen
+instructor
