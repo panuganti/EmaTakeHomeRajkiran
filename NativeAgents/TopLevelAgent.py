@@ -16,16 +16,17 @@ from langchain.schema import HumanMessage, AIMessage, ChatMessage, FunctionMessa
 ## Import all the tools
 from MergeDevAgents import *
 from Utilities import *
+from UserAgents import *
 
 class TopLevelAgent:
     def __init__(self, config):
         self.config = config
-        self.tools = [HRISAgent(), PersonalInfoAgent()]
+        self.tools = [HRISAgent(), PersonalInfoAgent(), CRMAgent()]
         self.responsible_ai_agent = ResponsibleAIAgent()
 
         # We use ReACT + CoT prompting methodology for this advanced reasoning agent
         self.ai_agent = initialize_agent(self.tools,
-                            # We need an advanced LLM here that follows the instructions diligently.
+                            # TODO: We need an advanced LLM here that follows the instructions diligently.
                             ChatOpenAI(model="gpt-4-0613", temperature=0, max_tokens=1000),
                             agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
                             verbose=True)
