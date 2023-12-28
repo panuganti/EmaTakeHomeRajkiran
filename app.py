@@ -1,45 +1,38 @@
-# from autogen import autogen
-from langchain.llms import OpenAI
-from langchain.memory import ConversationBufferMemory
-from langchain.agents.openai_assistant import OpenAIAssistantRunnable
-import os
-
+import chanlit as cl
 # Load environment variables from .env file
-from dotenv import load_dotenv, dotenv_values, set_key
-load_dotenv()
+# import os
+# from dotenv import load_dotenv
+# load_dotenv()
 
-# Read the configuration file
+# Set LLM Cache to optimize costs & speed up inference
+from langchain.cache import SQLiteCache, RedisSemanticCache
+from langchain.callbacks import get_openai_callback # TODO: Use this to get costs
+import langchain
+langchain.llm_cache = SQLiteCache(database_path="./cache/.llm.db") # TODO: Replace this with RedisSemanticCache
+
+# Read Config
 import configparser
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-from langchain.tools import BaseTool
-from typing import Optional, Type
-from langchain.agents import initialize_agent, Tool
-from langchain.agents import AgentType
-from langchain.chat_models import ChatOpenAI
+from NativeAgents import *
 
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
+#@cl.on_message
+def handle_message(message):
+    top_level_agent = TopLevelAgent(config)
+    # print(top_level_agent.run("What is my time off balance?"))
+    # response = top_level_agent.run("Summarize my last conversation with Bill’s company")
+    response = top_level_agent.run(message.content)
+    cl.send_message(content=response)
 
-# Define the agent
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import HumanMessage, AIMessage, ChatMessage, FunctionMessage
+    # top_level_agent.run("How many vacations do I have remaining?")
+    # top_level_agent.run("What is the total HC cost for each of my managers?")
+    # top_level_agent.run("How much revenue does the top 10 customers bring in?")
+    # top_level_agent.run("What fraction of P0 bugs in my organization has been fixed within SLA?")
+    # top_level_agent.run("How many leads have we not met yet?")
+    # top_level_agent.run("Tell me the pending time off requests for my team members in Bangalore.")
+    # top_level_agent.run("For my team in bangalore, tell me the count of tickets assigned to each of them, and how many rounds of interview they each had.")
 
-# App Logic
-from NativeAgents.TopLevelAgent import TopLevelAgent
-top_level_agent = TopLevelAgent(config)
-
-# Quick UI
-import streamlit as st
-st.set_page_config(page_title="Enterprise Copilot")
-st.header("Enterprise Copilot")
-input = st.text_input("Enter your message here", "Your question goes here ...")
-submit = st.button("Submit")
-if submit:
-    st.write("You: " + input)
-    response = top_level_agent.ProcessUserTask(input)
-    st.write("Bot:" + response)
 
 
 

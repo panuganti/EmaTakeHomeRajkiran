@@ -17,6 +17,14 @@ from langchain.schema import HumanMessage, AIMessage, ChatMessage, FunctionMessa
 from MergeDevAgents import *
 from Utilities import *
 from UserAgents import *
+from langchain.memory import ConversationBufferWindowMemory, ConversationKGMemory, ChatMessageHistory
+
+# TODO: 
+# 1. Enable Streaming support - for masking latency
+# 2. Incorporate Fallbacks - for robustness
+# 3. Integrate with Langsmith - For logging and debugging
+# 4. 
+
 
 class TopLevelAgent:
     def __init__(self, config):
@@ -24,13 +32,20 @@ class TopLevelAgent:
         self.merge_dev_tools = [HRISAgent(), PersonalInfoAgent(), CRMAgent()]
         self.responsible_ai_agent = ResponsibleAIAgent()
         self.synthesis_agent = SynthesisAgent(config)
+        self.history = ChatMessageHistory()
 
         # We use ReACT + CoT prompting methodology for this advanced reasoning agent
         self.ai_agent = initialize_agent(self.merge_dev_tools,
                             # TODO: We need an advanced LLM here that follows the instructions diligently. So, we use GPT-4 here.
                             ChatOpenAI(model="gpt-4-0613", temperature=0, max_tokens=1000),
                             agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-                            verbose=True)
+                            verbose=True,
+                            memory=ConversationBufferWindowMemory(buffer_size=2) # TODO: make it configurable. Also, keep the window small.
+                            )
+
+    def set_new_session(self):
+        self.history = ChatMessageHistory()
+        self.ai_agent.set_new_session()
 
     def run(self, utterance: str):
         # Perform Responsible AI Checks
@@ -40,6 +55,11 @@ class TopLevelAgent:
         if (self.responsible_ai_agent.detectPromptInjection(utterance)):
             return "Your ask violates Responsible AI guidelines. Please rephrase your ask."
 
+        self.history.add_user_message(utterance)
         agent_response = self.ai_agent.run(utterance)
-        return self.synthesis_agent.run(utterance, agent_response)
+
+        # We are using custom Synthesis agent instead of a Output Parser in order to keep the output more natural.
+        response_to_user = self.synthesis_agent.run(utterance, agent_response)
+        # self.history.add_ai_message(response_to_user)
+        return response_to_user
 
