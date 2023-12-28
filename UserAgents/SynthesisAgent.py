@@ -21,15 +21,6 @@ class SynthesisAgent():
         self.config = config
         self.llm = ChatOpenAI(model="gpt-4-0613", temperature=0, max_tokens=1000)
         
-    # def get_completion(prompt, model="gpt-3.5-turbo"): 
-    #     messages = [{"role": "user", "content": prompt}]
-    #     response = openai.ChatCompletion.create(
-    #         model=model,
-    #         messages=messages,
-    #         temperature=0,
-    #     )
-    #     return response.choices[0].message["content"]
-
     def run(self, resolved_user_utterance, agent_response: str):
         # Perform Responsible AI Checks
         if (self.responsible_ai_agent.shouldFlag(agent_response)):
@@ -40,7 +31,8 @@ class SynthesisAgent():
             You are a helpful AI bot. Your task is to answer user's question with very specific relevant information to the question in a natural way. \
             Do not provide any information that is not explicitly asked for. \ 
 
-            The user is, which is delimited by triple backticks, provide the answer strictly from the content, which is delimited by triple hashes. \ 
+            The user is, which is delimited by triple backticks, provide the answer strictly from the content, which is delimited by triple hashes. \
+            In case the content is about asking the user for clarification, your task is to ask the user for clarification. \ 
             ```{resolved_user_utterance}```
             ### {agent_response} ###
             """

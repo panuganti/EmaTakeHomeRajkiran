@@ -11,36 +11,43 @@ from langchain.agents import AgentType
 from langchain.chat_models import ChatOpenAI
 
 # Define the agent
-from langchain.schema import HumanMessage, AIMessage, ChatMessage, FunctionMessage
+from langchain.schema import  HumanMessage, AIMessage, ChatMessage, FunctionMessage, SystemMessage
+from langchain.llms import OpenAI
 
 ## Import all the tools
 from MergeDevAgents import *
 from Utilities import *
 from UserAgents import *
 from langchain.memory import ConversationBufferWindowMemory, ConversationKGMemory, ChatMessageHistory
+from langchain.tools.human.tool import HumanInputRun
 
 # TODO: 
 # 1. Enable Streaming support - for masking latency
 # 2. Incorporate Fallbacks - for robustness
 # 3. Integrate with Langsmith - For logging and debugging
-# 4. 
-
 
 class TopLevelAgent:
     def __init__(self, config):
         self.config = config
-        self.merge_dev_tools = [HRISAgent(), PersonalInfoAgent(), CRMAgent()]
+        self.tools = [HRISAgent(), PersonalInfoAgent(), CRMAgent()] # TODO: Also, add th KnowledgeGraphAgent here
         self.responsible_ai_agent = ResponsibleAIAgent()
         self.synthesis_agent = SynthesisAgent(config)
         self.history = ChatMessageHistory()
+        self.kgLLM = OpenAI(model="gpt-3.5-turbo-0613", temperature=0, max_tokens=1000) # TODO: Move to config
+
+        system_message = SystemMessage(
+          content="You are an AI agent that utilizes tools provided to solve the task. When you need to ask the user for clarification, you can return the message asking the user help to clarify."
+        )
 
         # We use ReACT + CoT prompting methodology for this advanced reasoning agent
-        self.ai_agent = initialize_agent(self.merge_dev_tools,
+        self.ai_agent = initialize_agent(self.tools,
                             # TODO: We need an advanced LLM here that follows the instructions diligently. So, we use GPT-4 here.
                             ChatOpenAI(model="gpt-4-0613", temperature=0, max_tokens=1000),
-                            agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-                            verbose=True,
-                            memory=ConversationBufferWindowMemory(buffer_size=2) # TODO: make it configurable. Also, keep the window small.
+                            agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION, # ReACT agent is best suited for this task.
+                            verbose=True, # TODO: Config
+                            agent_kwargs={"system_message": system_message},
+                            # memory=ConversationKGMemory(llm=self.kgLLM) # TODO: make it configurable. Also, keep the window small.
+                            memory=ConversationBufferWindowMemory(buffer_size=2)
                             )
 
     def set_new_session(self):
@@ -60,6 +67,6 @@ class TopLevelAgent:
 
         # We are using custom Synthesis agent instead of a Output Parser in order to keep the output more natural.
         response_to_user = self.synthesis_agent.run(utterance, agent_response)
-        # self.history.add_ai_message(response_to_user)
+        self.history.add_ai_message(response_to_user)
         return response_to_user
 

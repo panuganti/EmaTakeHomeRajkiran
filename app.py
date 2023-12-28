@@ -1,4 +1,3 @@
-import chanlit as cl
 # Load environment variables from .env file
 # import os
 # from dotenv import load_dotenv
@@ -17,13 +16,13 @@ config.read('config.ini')
 
 from NativeAgents import *
 
-#@cl.on_message
+#@chainlit.on_message
 def handle_message(message):
     top_level_agent = TopLevelAgent(config)
     # print(top_level_agent.run("What is my time off balance?"))
     # response = top_level_agent.run("Summarize my last conversation with Bill’s company")
     response = top_level_agent.run(message.content)
-    cl.send_message(content=response)
+    #cl.send_message(content=response)
 
     # top_level_agent.run("How many vacations do I have remaining?")
     # top_level_agent.run("What is the total HC cost for each of my managers?")
