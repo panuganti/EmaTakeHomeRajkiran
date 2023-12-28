@@ -17,7 +17,7 @@ class CRMAgent(BaseTool):
         ai_agent = initialize_agent(tools,
                             # The task here is straightforward. Hence, gpt-3.5-turbo is sufficient.
                             # For cost optimization, we can replace this agent with a combination of Intent-Detection & Entity/Slot Extraction
-                            ChatOpenAI(model="gpt-3.5-turbo-0613"),
+                            ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0, cache=False),
                             agent=AgentType.OPENAI_FUNCTIONS,
                             verbose=True)
         response = ai_agent.run(utterance)

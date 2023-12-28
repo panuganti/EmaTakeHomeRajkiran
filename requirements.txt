@@ -9,3 +9,4 @@ evals
 ipykernel
 pyautogen
 instructor
+boto3 # AWS

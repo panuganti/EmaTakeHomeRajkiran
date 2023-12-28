@@ -21,12 +21,13 @@ from UserAgents import *
 class TopLevelAgent:
     def __init__(self, config):
         self.config = config
-        self.tools = [HRISAgent(), PersonalInfoAgent(), CRMAgent()]
+        self.merge_dev_tools = [HRISAgent(), PersonalInfoAgent(), CRMAgent()]
         self.responsible_ai_agent = ResponsibleAIAgent()
+        self.synthesis_agent = SynthesisAgent(config)
 
         # We use ReACT + CoT prompting methodology for this advanced reasoning agent
-        self.ai_agent = initialize_agent(self.tools,
-                            # TODO: We need an advanced LLM here that follows the instructions diligently.
+        self.ai_agent = initialize_agent(self.merge_dev_tools,
+                            # TODO: We need an advanced LLM here that follows the instructions diligently. So, we use GPT-4 here.
                             ChatOpenAI(model="gpt-4-0613", temperature=0, max_tokens=1000),
                             agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
                             verbose=True)
@@ -39,4 +40,6 @@ class TopLevelAgent:
         if (self.responsible_ai_agent.detectPromptInjection(utterance)):
             return "Your ask violates Responsible AI guidelines. Please rephrase your ask."
 
-        return self.ai_agent.run(utterance)
+        agent_response = self.ai_agent.run(utterance)
+        return self.synthesis_agent.run(utterance, agent_response)
+

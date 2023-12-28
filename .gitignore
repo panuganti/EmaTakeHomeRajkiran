@@ -1,4 +1,6 @@
 .env
+cache/
+logs/
 
 # Python-related files and directories
 __pycache__/
