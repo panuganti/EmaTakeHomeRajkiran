@@ -1,7 +1,11 @@
-# Load environment variables from .env file
-# import os
-# from dotenv import load_dotenv
-# load_dotenv()
+import chainlit as cl
+
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema import StrOutputParser
+from langchain.schema.runnable import Runnable
+from langchain.schema.runnable.config import RunnableConfig
+
 
 # Set LLM Cache to optimize costs & speed up inference
 from langchain.cache import SQLiteCache, RedisSemanticCache
@@ -16,23 +20,25 @@ config.read('config.ini')
 
 from NativeAgents import *
 
-#@chainlit.on_message
-def handle_message(message):
+@cl.on_chat_start
+async def on_chat_start():
+    model = ChatOpenAI(streaming=True)
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "You're a very helpful agent.",
+            ),
+            ("human", "{question}"),
+        ]
+    )
+    runnable = prompt | model | StrOutputParser()
+    cl.user_session.set("runnable", runnable)
+
+
+@cl.on_message
+async def on_message(message: cl.Message):
     top_level_agent = TopLevelAgent(config)
-    # print(top_level_agent.run("What is my time off balance?"))
-    # response = top_level_agent.run("Summarize my last conversation with Bill’s company")
     response = top_level_agent.run(message.content)
-    #cl.send_message(content=response)
-
-    # top_level_agent.run("How many vacations do I have remaining?")
-    # top_level_agent.run("What is the total HC cost for each of my managers?")
-    # top_level_agent.run("How much revenue does the top 10 customers bring in?")
-    # top_level_agent.run("What fraction of P0 bugs in my organization has been fixed within SLA?")
-    # top_level_agent.run("How many leads have we not met yet?")
-    # top_level_agent.run("Tell me the pending time off requests for my team members in Bangalore.")
-    # top_level_agent.run("For my team in bangalore, tell me the count of tickets assigned to each of them, and how many rounds of interview they each had.")
-
-
-
-
-
+    msg = cl.Message(content=response)
+    await msg.send()
