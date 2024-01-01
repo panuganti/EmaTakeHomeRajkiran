@@ -1,7 +1,22 @@
 ## EMA-TakeHome-Rajkiran (TODO: Replace with a ProjectSpecificName)
 Search across work apps with AI enterprise search.
 
-## Plan of Execution
+## How to run
+The UI is built with Chainlit. To run the application, please follow the following steps:
+Step 1. pip install -r requirements.txt
+Step 2. chainlit run app.py  -- You will see a browser window open with Chat Interface
+Step 3. Try the following message: What's my time off balance ?
+Step 4. Try the second scenario: Summarize my last conversation with Bill’s company
+
+The mock-up data has been enabled for these scenarios. You can try various variations that uses this data.
+For enabling this app to other scenarios, we either need a merge.dev keys integrated with real applications Or, I need to mock more data.
+
+## Design Overview
+
+
+
+
+## Execution plan for this project.
 1. Understand the merge.dev categories and the models
 2. Create few compelling scenarios:
     a. Querying only one source
@@ -21,8 +36,6 @@ For my team in bangalore, tell me the count of tickets assigned to each of them,
     d. Address staleness of data stored/cached -- Memory/preference storage -- (ex: modeling of user)
     e. Knowledge graph scenarios
 
-
-## Overview
 
 ## Design
 
@@ -59,7 +72,7 @@ File Storage:
 5. Aggregate (Sum) of cost for all employees
 
 ## Scenario 4: How much revenue does the top 10 customers bring in?
-
+1. 
 
 ## Scenario 5: What fraction of P0 bugs in my organization has been fixed within SLA?
 1. Where to look for SLA ? If found, great, else, ask user
@@ -71,26 +84,9 @@ File Storage:
 2. For each, get the count of tickets assigned
 3. For each, how many rounds of interview they had.
 
-### TODO: Explore Autogen and Create agents for each of them
 
+## Important TODOs:
+1. 
 
-## Description
-An enterprise has several enterprise applications. On average an enterprise uses 150+ applications, each with 20+ APIs on average. There are 7000+ enterprise applications in the market.
-We plan to leverage/constrain ourselves with the integrations provided by merge.dev for this MVP.
-
-### About Merge.Dev
-
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-
-
-
-## Installation
-## Usage
-## Roadmap
-## Contributing
-## Authors and acknowledgment
-## License
-## TODOs
-
+## Architecture and Instructions for L5 Developers to complete/extend this project  
 
