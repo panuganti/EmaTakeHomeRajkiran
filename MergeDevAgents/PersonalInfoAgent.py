@@ -34,7 +34,7 @@ class PersonalInfo:
     # This is only a mock. This class is to be replaced retrieval using Merge.Dev API
     # In other words, the data retrieved here will not be stale.
 
-    dict = {"employee_id": "12345", "name": "John Doe", "email": "john.doe@gmail.com"}
+    dict = {"employee_id": "12345", "email": "john.doe@gmail.com"}
 
     def get_value(self, key: str):
         if key not in self.dict:

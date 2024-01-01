@@ -12,7 +12,7 @@ The mock-up data has been enabled for these scenarios. You can try various varia
 For enabling this app to other scenarios, we either need a merge.dev keys integrated with real applications Or, I need to mock more data.
 
 ## Design Overview
-
+The top-level-agent
 
 
 
@@ -21,9 +21,13 @@ For enabling this app to other scenarios, we either need a merge.dev keys integr
 2. Create few compelling scenarios:
     a. Querying only one source
     b. Querying multiple sources and joining information across -- More like ReAct
-
-     Work through each of these scenarios: 
-    Summarize my last conversation with Bill’s company
+    c. Work through each of these scenarios: 
+    d. Clarifying questions scenario
+    e. Address staleness of data stored/cached -- Memory/preference storage -- (ex: modeling of user)
+    f. Knowledge graph scenarios
+    
+Picked Scenario: Summarize my last conversation with Bill’s company
+Other scenarios easy to support:
 How many vacations do I have remaining?
 What is the total HC cost for each of my managers?
 How much revenue does the top 10 customers bring in?
@@ -31,11 +35,6 @@ What fraction of P0 bugs in my organization has been fixed within SLA?
 How many leads have we not met yet?
 Tell me the pending time off requests for my team members in Bangalore.
 For my team in bangalore, tell me the count of tickets assigned to each of them, and how many rounds of interview they each had.
-
-    c. Clarifying questions scenario
-    d. Address staleness of data stored/cached -- Memory/preference storage -- (ex: modeling of user)
-    e. Knowledge graph scenarios
-
 
 ## Design
 
