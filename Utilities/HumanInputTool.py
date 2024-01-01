@@ -12,7 +12,7 @@ def _print_func(text: str) -> None:
     print(text)
 
 
-class HumanInputRun(BaseTool):
+class HumanInputTool(BaseTool):
     """Tool that asks user for input."""
 
     name: str = "human"
