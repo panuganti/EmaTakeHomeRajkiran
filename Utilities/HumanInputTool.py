@@ -5,7 +5,8 @@ from typing import Callable, Optional
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.pydantic_v1 import Field
 from langchain_core.tools import BaseTool
-
+import chainlit as cl
+import asyncio
 
 def _print_func(text: str) -> None:
     print("\n")
@@ -30,5 +31,16 @@ class HumanInputTool(BaseTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Use the Human input tool."""
-        self.prompt_func(query)
-        return self.input_func()
+        # self.prompt_func(query)
+        res = asyncio.run(cl.AskUserMessage(content=query).send())
+        if res:
+            return res['content']
+        
+    async def _arun(self, query: str,
+        run_manager: Optional[CallbackManagerForToolRun] = None,
+        ) -> str:
+        """Use the Human input tool."""
+        # self.prompt_func(query)
+        res = await cl.AskUserMessage(content=query).send()
+        if res:
+            return res['content']    

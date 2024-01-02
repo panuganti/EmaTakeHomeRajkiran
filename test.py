@@ -13,12 +13,6 @@
 
 ###########################
 
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
-
-from langchain.llms.openai import OpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.agents import initialize_agent, Tool, AgentExecutor
 import chainlit as cl
 
 # Load environment variables from .env file
