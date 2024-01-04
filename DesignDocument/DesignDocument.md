@@ -401,7 +401,8 @@ def does_response_answer_user_task(response:str, question:str, context: str):
    facts_asked_in_question = Extract the fact(s) asked in the question.
    [facts_in_response] = Extract the fact(s) present in the response.
 
-   foreach(var fact in facts_asked_in_question)
+   for fact in facts_asked_in_question:
+      is any fact in question unanswered in response facts
 
    if not(is_any_fact_in_response_answers(fact_in_question)):
       invoke graceful_exit(unaswered_facts_asked_in_question, facts_in_response)
@@ -527,9 +528,10 @@ class ResponsibleAIAgent:
 
 LLM's are by design not always reliable. We need to plan for a hotfix architecture in case a high priority bug is reported. A hotfix architecture (or user-override/tenant-level override architecture) for every LLM action.
 
-Hotfix service is a key value store (Object store) where key is the natural language sentence and the value is a json. For scenario agents, the JSON is a pair (function_name, [parameters]).
+Hotfix service is a key value store (Object store) where key is the natural language sentence and the value is a json. 
+- For scenario agents, the JSON is a pair (function_name, [parameters]).
+- For query planner agent, the JSON is the query_plan object
 
-TODO: Image for hotfix
 ```
 class HotfixElement:
    key:str
@@ -551,13 +553,104 @@ class LLM:
 
 ```
 
-
 ## 4. [Design Enhancements](#enhancements)
+This section covers various features that are not core to the functionality but are designed to enhance user experience with the system and for cost optimizations.
+
+- LLM Response Caching: Used to minimize LLM costs as well as significantly improve latency.
+- Personal Knowledge Graph: Built to reflect user's personal preferences. Used to enhance the context for the query_planner to make decisions. It would also be used by 'Recommendation Engine' to provide a 'Recourse Path'
+- Tenant Knowledge Graph:   
+
 ## 4.1. [Caching](#caching)
+We chose a TenantLevelCache. This design decision is to be configurable and based on a tenant. We anticipate that users in a tenant would have many 'similar' asks and hence we chose the Tenant-Level cache as the default choice of caching.
+
+```
+class TenantLevelCache():
+    """Cache with storage in the disk."""
+
+    def __init__(self, engine: Engine, cache_schema:):
+        """Initialize by creating all tables."""
+        self.engine = engine # remote object store
+        self.cache_schema = cache_schema
+        create_empty_key_value_store(self.engine)
+
+    def lookup(self, prompt: str, llm_string: str, llm_parameters:List[parameter_values]) -> Optional[RETURN_VAL_TYPE]:
+        """Look up based on prompt and llm_string and llm_parameters."""
+        key = key_function(prompt, llm_string, llm_parameters)
+        if (self.engine.contains_key()):
+            return self.engine[key]
+        return None
+
+    def update(self, prompt: str, llm_string: str, llm_parameters:List[parameter_values], value:str) -> None:
+        """Update based on prompt and llm_string."""
+        key = key_function(prompt, llm_string, llm_parameters)
+        self.engine[key] = value;
+
+
+    def clear(self, **kwargs: Any) -> None:
+        """Clear cache."""
+        with Session(self.engine) as session:
+            session.query(self.cache_schema).delete()
+            session.commit()
+```
+
+We only chose precise key value lookup. We do not chose to have a semantic similarity based look up in order to dismiss any possibility of hallucinations.
+
 ## 4.2. [Knowledge Graph](#knowledge_graph)
 
+```
+class KnowledgeGraphAgent():
+    name = "knowledge_graph"
+    description = "The KnowledgeGraphAgent is used to query the knowledge graph for retrieving from user's preferences."
+
+    def __init__(self):
+        self.llm = OpenAI(model="gpt-3.5-turbo-0613", temperature=0, max_tokens=1000) # TODO: Move to config
+        self.graph_index_creator = GraphIndexCreator(llm=self.llm)
+        self.knowledge_graph = self.graph_index_creator.from_text("") # Initialize empty graph
+
+    def add_to_knowledge_graph(self, knowledge: str):
+        """Extracts the knowledge from the input and adds it to the knowledge graph."""
+        triples = self.graph_index_creator.from_text(knowledge)
+        for (node1, relation, node2) in triples.get_triples():
+            self.knowledge_graph.add_triple(node1, relation, node2)
+
+    # If user corrects the assumption we made, we need to remove the triple from the knowledge graph
+    # If there is an update to the knowledge, we need to update the knowledge graph
+    def remove_from_knowledge_graph(self, knowledge: str):
+        """Extracts the knowledge from the input and removes it from the knowledge graph."""
+        triples = self.graph_index_creator.from_text(knowledge)
+        for (node1, relation, node2) in triples.get_triples():
+            self.knowledge_graph.delete_triple(node1, relation, node2)
+
+    def query_knowledge_graph(self, query: str):
+        """Queries the knowledge graph and returns the answer."""
+        prompt = PromptTemplate(input_variables=[query], 
+                                       template="What is the answer to the question: {query}? If you do not know the answer, please say 'I do not know'.")
+        llm = OpenAI(model="gpt-3.5-turbo-0613", temperature=0, max_tokens=1000) # TODO: Move to config
+        chain = GraphQAChain(self.llm, prompt=prompt)
+        response = chain({'query': query}, 
+                         {'knowledge_graph': self.knowledge_graph})
+        return response['text']
+    
+    def _run(self, query: str):
+        """Runs the agent."""
+        answer = self.query_knowledge_graph(query)
+        return answer
+    
+    def _arun(self, query: str):
+        """Runs the agent asynchronously."""
+        raise NotImplementedError("This tool does not support async")
+```
+
 ## Personal Knowledge Graph
+The Personal Knowledge Graph is built from the Personal Chat History. The knowledge graph is processed by a separate independent cron job that retrieves the Chat History at regular intervals and updates the knowledge graph.
+By this design, the latency of updating the knowledge graph does not impact the latency of the chatbot service. The data in the knowledge graph is NOT going to be in sync with the actual data. Hence, Knowledge Graph is not to be seen as a source of facts. It is to be used only to make default preferences on behalf of the user and to reduce the number of times a user intervention/clarification is asked for.  
+
 ## Tenant Knowledge Graph
+The Tenant Knowledge Graph is built from the combined personal chat history of all the members of the Tenant. Similar to the Personal Knowledge Graph, The Tenant knowledge graph is processed by a separate independent cron job that retrieves the Chat History at regular intervals and updates the knowledge graph. Similar to the Personal Knowledge Graph, it is not to be a source of facts.
+
+*Discussion:* (**Staleness**):
+In our design the Knowledge Graph is to be used NOT as a source of Facts lookup but as a source of Preferences. The data in the Knowledge Graph can be stale by design as it is an independent system. However, the impact of staleness, since it is not used as a source of Facts, is only on the preferences selection and not an incorrect Fact. All through the design, Knowledge Graph is to be used only in this context.
+
 
 ## Chat History
 Chat History is the user-visible messages and responses between user and agent.
@@ -566,34 +659,54 @@ Chat History is per session. A new session starts a new set for Chat history.
 Storage: Chat History is to be stored in any object-store (ex: AWS S3). 
 UI will provide access to list of sessions and user can continue their chat in that session from where it is left. The backend Orchestrator is provided access to all the Chat history in that session. However, the Orchestrator choses a (configurable) small window (ex: 2 to 5 messages) as context to be provided to Query Planner LLM and the Synthesis LLM. 
 
-## Chat Memory
-Chat Memory is the consolidated internal memory of the bot over time. The purpose of this Chat Memory is to remmeber Entities that are relevant to the user and user's preferences. This
+## Chat Memory 
+Chat Memory is the consolidated internal memory of the bot over time. The purpose of this Chat Memory is to remmeber Entities that are relevant to the user and user's preferences. The Chat Memory is processed from Chat History particularly focussed on user preferences and user corrections and clarifications. 
 
-## Tenant Memory
+```
+class ChatMemory:
+   def process(chat_history):
+      get pairs of (chat_response, user_clarification):
+      for pair in chat_history_pairs:
 
+
+   def retrieve_relevant(question:str, context:str):
+      """Retrieves exchange from Chat Memory that is relevant to the context """
+```
 
 ## 5. [Debugging Design](#debugging)
+
 - Monitoring, Reporting, Debugging and Data Collection
+```
+
+```
+
 ## 6. [Experimentation Design & Metrics](#experimentation)
+**Metrics:**
+
+**A/B experimentation:**
+
+
 ## 7. [Future Improvements](#future_improvements)
 ## 7.1. [Cost Optimizations](#cogs)
-## 7.2. [Latency Improvement](#latency)
+## 7.2. [Latency Analysis & Improvement](#latency)
+In this design, we assume that the significant contribution to the latency is that caused by LLMs and not the API look up by merge.dev. Our latency estimates and optimization plans are to be devised based on this assumption.
+
+*Latency Estimate*: The latency of the chatbot to answer a user's question is ```{llm_latency * max_depth_of_query_plan * latency_of_single_question}```
+The max_depth_of_query_plan must be a config to limit the maximum latency. In case, the execution hits the max_depth (or max iterations in the planner loop), the application must chose to gracefully exit.
+The llm_latency for the planner is to optimized using caching. However, the worst case latency is bound to be ```{llm_latency * max_depth_of_query_plan}```. The ```latency_of_single_question``` is a relatively simpler task that does not require an LLM in most cases. Regular NLP models that do intent-classification and entity extraction are to be leveraged here. LLMs are to be used only as a fallback.
+
+
+*Perceived Latency*: 
+Since the latency of the chatbot can be quite significant, it is important that the intermediate stages are to be streamed to the user. This reduces the perceived latency. Each stage of the query_plan to is being executed is to be streamed back to the user. The maximum perceived latency is approximately the latency of a single LLM call.  
+
+
 ## 7.3. [Scalability](#scalability)
+
 ## 7.4. [API](#api)
+
 ## 7.5 [Extensibility] - Allowing others to integrate with us
 ## 7.6 [Hand-off to Human (not user) Agent]
-## 7.7 [Should work from any starting context -- Not just empty chatbot]
-
-
-
-
-
-
-
-
-
-
-
+## 7.7 [Should work from any starting context]
 
 
 

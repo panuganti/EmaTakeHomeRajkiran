@@ -10,7 +10,7 @@ from langchain.tools import Tool
 # However, user's preference can change over time. Hence, we need to update the knowledge graph.
 
 class KnowledgeGraphAgent():
-    name = "custom_search"
+    name = "knowledge_graph"
     description = "The KnowledgeGraphAgent is used to query the knowledge graph for retrieving from user's preferences."
 
     def __init__(self):
