@@ -3,8 +3,6 @@ langchain
 openai
 python-dotenv
 huggingface_hub
-streamlit
-gradio
 evals
 ipykernel
 pyautogen
@@ -12,3 +10,4 @@ instructor
 boto3 # AWS
 chainlit
 numexpr
+marvin

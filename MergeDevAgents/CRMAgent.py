@@ -212,13 +212,5 @@ class CRM:
     def get_user_by_id(self, user_id):
         return f"Mock data for GET /users/{user_id}"
 
-    def get_custom_object_classes(self):
-        return "Mock data for GET /custom-object-classes"
-
-    def get_custom_object_class_by_id(self, custom_object_class_id):
-        return f"Mock data for GET /custom-object-classes/{custom_object_class_id}"
-
-    # Additional methods for other GET endpoints can be added here
-
 
 

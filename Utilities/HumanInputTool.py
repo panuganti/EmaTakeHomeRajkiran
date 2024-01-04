@@ -16,11 +16,10 @@ def _print_func(text: str) -> None:
 class HumanInputTool(BaseTool):
     """Tool that asks user for input."""
 
-    name: str = "human"
+    name: str = "Human"
     description: str = (
-        "You can ask a human for guidance when you think you "
-        "got stuck or you are not sure what to do next. "
-        "The input should be a question for the human."
+        "You can ask a human for disambiguation when you have to make a choice and you do not have enough information to make the choice."
+        "The input should be a detailed question with entire observation for the human to answer."
     )
     prompt_func: Callable[[str], None] = Field(default_factory=lambda: _print_func)
     input_func: Callable = Field(default_factory=lambda: input)
