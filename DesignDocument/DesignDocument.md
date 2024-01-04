@@ -673,21 +673,48 @@ class ChatMemory:
       """Retrieves exchange from Chat Memory that is relevant to the context """
 ```
 
-## 5. [Debugging Design](#debugging)
+## 5. [Debugging & Feedback](#debugging)
+The following information is to be logged for debugging when a feedback is received.
+1. Chat History of the session
+2. Logging of the Query Plan and Updates to the Query Plan
+3. Invocations to Scenario Agents and their responses.
 
-- Monitoring, Reporting, Debugging and Data Collection
-```
-
-```
 
 ## 6. [Experimentation Design & Metrics](#experimentation)
-**Metrics:**
 
-**A/B experimentation:**
+*Metrics:*
+There are three segments of quality measurements that are to be made in this design
+1. End-End Quality Measurement: (Discussed below in A/B experimentation)
+2. Quality measurement of Query Planner: A dataset can be prepared with Ideal query plan. Query planner is to be measured against this Ideal set.
+3. Quality measurement of each of the Scenario Agents: The scenario agents are classic Intent-Detection and Entity-Extraction (NER) scenarios. Classic metrics of Precision/Recall/F1-Score/Accuracy for Intent-Detection and NER.
 
+
+*A/B experimentation:*
+A prompt change can have a significant impact on the quality of the chatbot. It is important that some of the important metrics are tracked in an A/B experiment.
+The A/B experiment can be performed based on the variations in the config for equally randomly selection of users between A & B.
+Important metrics to track in an A/B experiment.
+1. Apology Rate: Number of times the chatbot determined that it could not answer the user question
+2. User engagement (abandonment) Rate
+3. Latency
+4. User correction Rate
+5. ResponsibleAI incidents Rate
+6. Number of LLM calls (cost)
+7. Readability (BLEU metric)
 
 ## 7. [Future Improvements](#future_improvements)
+This section discusses various improvements that can be done to this design.
+
 ## 7.1. [Cost Optimizations](#cogs)
+One of the significant concerns while scaling an LLM application is the cost of using LLMs.
+
+The following are the recommendations for reducing the costs:
+- The scenario agents that are responsible for answering single question do NOT require an LLM call. These agents can be built using traditional Intent Classifier and Entity Extraction in a similar way that an Alexa NLP is built.
+
+- Low-cost LLMs: SLM (Small Language Model):
+The first Query-Plan can be built by a LLM (GPT-4). However, in all the subsequent iterations, Small Open-Source Language Models are sufficient to validate if any update to the Query Plan is needed. This would drastically reduce the LLM costs without compromising on the quality. LLMs can still be used at a later stage as a fallback if SLM's are unable to converge towards solving the user task. 
+
+- Caching: Tenant level caching is to be enabled for LLMs which helps keep the LLM costs logarithmic scale to the growth in the user scale. 
+
 ## 7.2. [Latency Analysis & Improvement](#latency)
 In this design, we assume that the significant contribution to the latency is that caused by LLMs and not the API look up by merge.dev. Our latency estimates and optimization plans are to be devised based on this assumption.
 
@@ -695,18 +722,14 @@ In this design, we assume that the significant contribution to the latency is th
 The max_depth_of_query_plan must be a config to limit the maximum latency. In case, the execution hits the max_depth (or max iterations in the planner loop), the application must chose to gracefully exit.
 The llm_latency for the planner is to optimized using caching. However, the worst case latency is bound to be ```{llm_latency * max_depth_of_query_plan}```. The ```latency_of_single_question``` is a relatively simpler task that does not require an LLM in most cases. Regular NLP models that do intent-classification and entity extraction are to be leveraged here. LLMs are to be used only as a fallback.
 
-
 *Perceived Latency*: 
 Since the latency of the chatbot can be quite significant, it is important that the intermediate stages are to be streamed to the user. This reduces the perceived latency. Each stage of the query_plan to is being executed is to be streamed back to the user. The maximum perceived latency is approximately the latency of a single LLM call.  
 
-
-## 7.3. [Scalability](#scalability)
+## 7.3. [Bottlenecks & Scalability](#scalability)
+In order to scale to many millions of users, it is important to identify the bottlenecks and ensure that they are hosted in a scalable environment. In the current design, the key bottleneck or the slowest component is the query_planner. The query_planner should be a dedicated service and scales linearly to the traffic. Each of the scenario agents are to be a separate service and are to be scaled according to the traffic to those scenario agents.
 
 ## 7.4. [API](#api)
-
-## 7.5 [Extensibility] - Allowing others to integrate with us
-## 7.6 [Hand-off to Human (not user) Agent]
-## 7.7 [Should work from any starting context]
+It is very important, even while having a streaming interface with the client, that the service is built as an API. This enables the chatbot to be integrated into any application of user's choice. In my current implementation, there are three components that are tied to the particular UI, namely, the 'callbacks' that stream the state of execution to the user, the Human-Input-Tool and the ability to Context from which the user interaction is initiated (instead of the stateless context of current design)  
 
 
 
